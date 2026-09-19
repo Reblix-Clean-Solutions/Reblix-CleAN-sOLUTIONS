@@ -1,0 +1,6 @@
+{
+  "name": "Reblix Clean Solutions - Die Zukunft der Sauberkeit",
+  "description": "Futuristische Cyberpunk-Webseite für Reblix Clean Solutions Gebäudereinigung in 4K Neon mit High-Tech-Reinigungsservice und Kontakt.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
