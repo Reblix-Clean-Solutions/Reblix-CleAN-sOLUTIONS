@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { SiteContent, ImagePanel, ServiceItem } from '../types';
+import React, { useState, useEffect } from 'react';
+import { SiteContent, ImagePanel, ServiceItem, InquiryRecord } from '../types';
 import { 
   Lock, KeyRound, ShieldCheck, X, Save, RotateCcw, Plus, Trash2, 
-  Upload, Image as ImageIcon, FileText, CheckCircle, AlertTriangle, Sparkles, Mail, Phone, Calendar
+  Upload, Image as ImageIcon, FileText, CheckCircle, AlertTriangle, Sparkles, Mail, Phone, Calendar,
+  Building, Send, ExternalLink
 } from 'lucide-react';
 
 interface AdminModalProps {
@@ -15,18 +16,7 @@ interface AdminModalProps {
   setIsAdmin: (val: boolean) => void;
 }
 
-interface InquiryRecord {
-  id: string;
-  date: string;
-  targetEmail: string;
-  name: string;
-  email: string;
-  phone: string;
-  objectType: string;
-  message: string;
-}
-
-// Encrypted SHA-256 target hash for admin authentication
+// Encrypted SHA-256 target hash for admin authentication (1304)
 const SECURE_ADMIN_HASH = '8ecb5bcd8cd84cc3ffc6f5dc3076d81c0a457a6bd4b305a33f318b623d701c2e';
 
 async function computeSha256(text: string): Promise<string> {
@@ -59,16 +49,27 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       const stored = localStorage.getItem('reblix_inquiries');
       if (stored) {
         setInquiries(JSON.parse(stored));
+      } else {
+        setInquiries([]);
       }
     } catch (e) {
       console.error(e);
     }
   };
 
-  // Sync tempContent and inquiries when siteContent changes or modal opens
-  React.useEffect(() => {
+  // Sync tempContent and inquiries when siteContent changes or modal opens, and listen to storage events
+  useEffect(() => {
     setTempContent(JSON.parse(JSON.stringify(siteContent)));
     loadInquiries();
+
+    const handleStorageChange = () => {
+      loadInquiries();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [siteContent, isOpen]);
 
   const handleDeleteInquiry = (id: string) => {
@@ -336,7 +337,12 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 }`}
               >
                 <Mail className="w-3.5 h-3.5" />
-                <span>POSTEINGANG ({inquiries.length})</span>
+                <span>NACHRICHTEN ({inquiries.length})</span>
+                {inquiries.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.2 bg-cyan-400 text-black text-[10px] font-black rounded-full shadow-[0_0_8px_#00f0ff]">
+                    {inquiries.length}
+                  </span>
+                )}
               </button>
 
               <div className="ml-auto flex items-center gap-2">
@@ -713,29 +719,31 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               {/* Tab 4: ANFRAGEN & POSTEINGANG */}
               {activeAdminTab === 'ANFRAGEN' && (
                 <div className="space-y-4 max-w-4xl mx-auto">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 rounded-xl bg-black/60 border border-cyan-500/40">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-black/60 border border-cyan-500/40">
                     <div>
                       <h4 className="text-sm font-bold font-display text-white flex items-center gap-2">
                         <Mail className="w-4 h-4 text-cyan-400" />
-                        <span>EINGEGANGENE KUNDENANFRAGEN</span>
+                        <span>EINGEGANGENE NACHRICHTEN & SOFORT-ANFRAGEN</span>
+                        <span className="text-xs font-mono-cyber px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40">
+                          {inquiries.length} gesamt
+                        </span>
                       </h4>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        Hier finden Sie alle Kontaktanfragen, die Besucher über das Webseiten-Formular an{' '}
-                        <span className="text-cyan-300 font-bold">{tempContent.contactInfo.email}</span> gesendet haben.
+                      <p className="text-xs text-slate-400 mt-1">
+                        Hier sehen Sie alle Direktnachrichten mit Firmenname, E-Mail und Telefonnummer, die Besucher über die Website hinterlassen haben.
                       </p>
                     </div>
 
                     {inquiries.length > 0 && (
                       <button
                         onClick={() => {
-                          if (confirm('Möchten Sie wirklich alle Anfragen löschen?')) {
+                          if (confirm('Möchten Sie wirklich alle Nachrichten löschen?')) {
                             setInquiries([]);
                             localStorage.removeItem('reblix_inquiries');
                           }
                         }}
                         className="px-3 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-700 text-red-300 text-xs transition-colors cursor-pointer self-start sm:self-auto"
                       >
-                        Alle Anfragen leeren
+                        Alle leeren
                       </button>
                     )}
                   </div>
@@ -746,26 +754,37 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                         <Mail className="w-6 h-6" />
                       </div>
                       <h5 className="text-sm font-bold font-display text-slate-300">
-                        Keine neuen Anfragen vorhanden
+                        Keine neuen Nachrichten vorhanden
                       </h5>
                       <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                        Sobald ein Kunde das Kontaktformular ausfüllt und absendet, wird die Anfrage hier übersichtlich aufgelistet.
+                        Sobald ein Besucher über „Sofort Nachricht senden“ eine Anfrage absendet, erscheint sie sofort hier mit Firmenname, Kontaktdaten und Text.
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-3.5">
                       {inquiries.map((inq) => (
                         <div
                           key={inq.id}
-                          className="p-4 rounded-xl bg-[#0c0f18] border border-cyan-500/30 hover:border-cyan-500/60 space-y-3 transition-colors"
+                          className="p-4 sm:p-5 rounded-xl bg-[#0c0f18] border-2 border-cyan-500/40 hover:border-cyan-400 space-y-3 transition-colors shadow-lg"
                         >
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
-                            <div className="flex items-center gap-2">
+                          {/* Card Header */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-800">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f0ff]" />
-                              <span className="font-bold text-white text-sm">{inq.name}</span>
-                              <span className="text-[10px] font-mono-cyber px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40">
-                                {inq.objectType}
-                              </span>
+                              <span className="font-bold text-white text-sm sm:text-base font-display">{inq.name}</span>
+                              
+                              {inq.company && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-mono-cyber px-2.5 py-0.5 rounded bg-pink-950/80 text-pink-300 border border-pink-500/50">
+                                  <Building className="w-3 h-3 text-pink-400" />
+                                  <span>Firma: {inq.company}</span>
+                                </span>
+                              )}
+
+                              {inq.objectType && !inq.company && (
+                                <span className="text-[10px] font-mono-cyber px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40">
+                                  {inq.objectType}
+                                </span>
+                              )}
                             </div>
 
                             <div className="flex items-center gap-3 text-xs text-slate-400 font-mono-cyber">
@@ -775,7 +794,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                               </span>
                               <button
                                 onClick={() => handleDeleteInquiry(inq.id)}
-                                title="Anfrage löschen"
+                                title="Nachricht löschen"
                                 className="p-1.5 rounded hover:bg-red-950 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -783,26 +802,57 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                            <div className="flex items-center gap-2 text-slate-300">
+                          {/* Contact Details */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono-cyber bg-black/50 p-2.5 rounded-lg border border-slate-800/80">
+                            <div className="flex items-center gap-2 text-slate-200">
                               <Mail className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                              <a href={`mailto:${inq.email}`} className="hover:text-cyan-300 underline truncate">
-                                {inq.email}
+                              <span className="text-slate-400">E-Mail:</span>
+                              <a href={`mailto:${inq.email}`} className="text-cyan-300 hover:text-cyan-100 underline truncate font-semibold">
+                                {inq.email || 'Nicht angegeben'}
                               </a>
                             </div>
-                            <div className="flex items-center gap-2 text-slate-300">
+
+                            <div className="flex items-center gap-2 text-slate-200">
                               <Phone className="w-3.5 h-3.5 text-pink-400 shrink-0" />
-                              <a href={`tel:${inq.phone}`} className="hover:text-pink-300 truncate">
-                                {inq.phone}
+                              <span className="text-slate-400">Tel:</span>
+                              <a href={`tel:${(inq.phone || '').replace(/\s+/g, '')}`} className="text-pink-300 hover:text-pink-100 font-bold truncate">
+                                {inq.phone || 'Nicht angegeben'}
                               </a>
                             </div>
                           </div>
 
+                          {/* Message Body */}
                           {inq.message && (
-                            <div className="p-3 rounded-lg bg-black/60 border border-slate-800 text-xs text-slate-200 leading-relaxed font-sans">
-                              {inq.message}
+                            <div className="p-3.5 rounded-lg bg-black/80 border border-cyan-500/20 text-xs sm:text-sm text-slate-200 leading-relaxed font-sans">
+                              <div className="text-[10px] text-cyan-400 uppercase font-mono-cyber font-bold mb-1">
+                                Nachrichtentext:
+                              </div>
+                              <p className="whitespace-pre-wrap">{inq.message}</p>
                             </div>
                           )}
+
+                          {/* Quick Action Reply Buttons */}
+                          <div className="flex flex-wrap items-center gap-2 pt-1 font-mono-cyber">
+                            {inq.email && (
+                              <a
+                                href={`mailto:${inq.email}?subject=${encodeURIComponent(`Reblix Clean Solutions - Antwort auf Ihre Anfrage (${inq.company || inq.name})`)}`}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-400 text-cyan-200 text-xs font-bold transition-colors"
+                              >
+                                <Mail className="w-3 h-3 text-cyan-300" />
+                                <span>Per E-Mail antworten</span>
+                              </a>
+                            )}
+
+                            {inq.phone && (
+                              <a
+                                href={`tel:${inq.phone.replace(/\s+/g, '')}`}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-950/80 hover:bg-pink-900 border border-pink-400 text-pink-200 text-xs font-bold transition-colors"
+                              >
+                                <Phone className="w-3 h-3 text-pink-300" />
+                                <span>Anrufen ({inq.phone})</span>
+                              </a>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

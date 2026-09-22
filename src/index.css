@@ -15,6 +15,18 @@
 }
 
 /* Neon Text Glows */
+.neon-cyberpunk-title {
+  color: #ffffff;
+  text-shadow:
+    0 0 6px rgba(255, 255, 255, 0.95),
+    0 0 14px #ff2d8d,
+    0 0 28px #ff2d8d,
+    0 0 48px #00f0ff,
+    0 0 75px #00f0ff,
+    0 0 115px #ff2d8d;
+  letter-spacing: 0.05em;
+}
+
 .neon-pink-text {
   color: #ff2d8d;
   text-shadow: 0 0 5px #ff2d8d, 0 0 12px #ff2d8d, 0 0 25px rgba(255, 45, 141, 0.8), 0 0 45px rgba(255, 45, 141, 0.5);
@@ -91,6 +103,31 @@
 
 .animate-neon-pulse {
   animation: neonPulse 3s infinite ease-in-out;
+}
+
+@keyframes glanzSweepFromTopToBottom {
+  0% {
+    top: -50px;
+    opacity: 0;
+  }
+  4% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.animate-glanz-full {
+  position: absolute;
+  left: 0;
+  right: 0;
+  animation: glanzSweepFromTopToBottom 2.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  pointer-events: none;
 }
 
 @keyframes laserSweep {

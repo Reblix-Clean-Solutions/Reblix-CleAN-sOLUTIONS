@@ -40,3 +40,16 @@ export interface SiteContent {
   services: ServiceItem[];
   images: ImagePanel[];
 }
+
+export interface InquiryRecord {
+  id: string;
+  date: string;
+  targetEmail: string;
+  name: string;
+  company?: string;
+  email: string;
+  phone: string;
+  objectType?: string;
+  message: string;
+  read?: boolean;
+}

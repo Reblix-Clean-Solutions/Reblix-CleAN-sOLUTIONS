@@ -1,324 +1,416 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ContactInfo, ServiceItem } from '../types';
-import { Mail, Phone, User, Building, Copy, Check, Send, Sparkles, MapPin } from 'lucide-react';
+import { 
+  Mail, Phone, User, Building, Copy, Check, Sparkles, MapPin, 
+  ExternalLink, HeartHandshake, Send, CheckCircle, MessageSquare 
+} from 'lucide-react';
 import { PartnerBadge } from './PartnerBadge';
+import { saveInquiryToStorage } from '../data/cleaningData';
 
 interface ContactSectionProps {
   contactInfo: ContactInfo;
-  services: ServiceItem[];
+  services?: ServiceItem[];
   prefilledService?: string;
 }
 
 export const ContactSection: React.FC<ContactSectionProps> = ({ 
   contactInfo,
-  services,
-  prefilledService 
 }) => {
   const [copied, setCopied] = useState(false);
-  const [formSubmitted, setFormSubmitted] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    objectType: prefilledService || (services[0]?.title ?? 'Stiegenaufgang- & Treppenreinigung'),
-    message: '',
-  });
+  const [hasClickedEmail, setHasClickedEmail] = useState(false);
 
-  useEffect(() => {
-    if (prefilledService) {
-      setFormData((prev) => ({ ...prev, objectType: prefilledService }));
-    }
-  }, [prefilledService]);
+  // Form states for instant direct message
+  const [company, setCompany] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  // Exact target email requested by user
+  const emailAddress = contactInfo.email || 'reblixcceansoutions@gmail.com';
+
+  // Direct Gmail web compose link: pre-populates recipient and subject
+  const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(emailAddress)}&su=${encodeURIComponent('Reblix Clean Solutions - Anfrage')}`;
 
   const copyContactData = () => {
-    const text = `KONTAKT\n${contactInfo.name}\n${contactInfo.company}\n${contactInfo.email}\nTel. ${contactInfo.phone}`;
+    const text = `KONTAKTDATEN\n${contactInfo.name}\n${contactInfo.company}\n${emailAddress}\nTel. ${contactInfo.phone}\n${contactInfo.area}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEmailClick = () => {
+    setHasClickedEmail(true);
+  };
 
-    // Store inquiry locally so Admin can also inspect incoming leads
-    try {
-      const storedInquiries = JSON.parse(localStorage.getItem('reblix_inquiries') || '[]');
-      storedInquiries.unshift({
-        id: 'inq-' + Date.now(),
-        date: new Date().toLocaleString('de-AT'),
-        targetEmail: contactInfo.email,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        objectType: formData.objectType,
-        message: formData.message || 'Keine zusätzliche Nachricht angegeben',
-      });
-      localStorage.setItem('reblix_inquiries', JSON.stringify(storedInquiries));
-    } catch (err) {
-      console.error('Failed to save inquiry:', err);
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+
+    if (!email.trim() && !phone.trim()) {
+      setFormError('Bitte geben Sie mindestens eine E-Mail-Adresse oder Telefonnummer an.');
+      return;
     }
 
-    // Show on-page confirmation directly without navigating away to email app
-    setFormSubmitted(true);
+    if (!message.trim()) {
+      setFormError('Bitte geben Sie Ihre Nachricht ein.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Save directly into local storage so Dominik sees it in the Admin-Bereich
+      saveInquiryToStorage({
+        name: name.trim() || 'Interessent',
+        company: company.trim() || 'Privat / Nicht angegeben',
+        email: email.trim(),
+        phone: phone.trim(),
+        message: message.trim(),
+        targetEmail: emailAddress,
+      });
+
+      // Dispatch storage event so open admin components sync immediately
+      window.dispatchEvent(new Event('storage'));
+
+      setIsSubmitting(false);
+      setSubmitSuccess(true);
+
+      // Reset form fields
+      setCompany('');
+      setName('');
+      setEmail('');
+      setPhone('');
+      setMessage('');
+    } catch (err) {
+      console.error('Error saving message:', err);
+      setIsSubmitting(false);
+      setFormError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
+    }
   };
 
   return (
     <div id="kontakt" className="w-full mb-10 pt-4">
       {/* Outer Card with Neon Blue & Pink Framing */}
-      <div className="rounded-2xl bg-gradient-to-b from-[#0c0f18] via-[#080911] to-black border-2 border-cyan-500/50 shadow-[0_0_35px_rgba(0,240,255,0.25)] p-6 sm:p-8 relative overflow-hidden">
+      <div className="rounded-2xl bg-gradient-to-b from-[#0c0f18] via-[#080911] to-black border-2 border-cyan-500/50 shadow-[0_0_35px_rgba(0,240,255,0.25)] p-6 sm:p-10 relative overflow-hidden">
         
         {/* Subtle Cyber Accents */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10 items-start">
+        <div className="max-w-3xl mx-auto relative z-10 space-y-6 text-center">
           
-          {/* Left Column: EXACT required contact details */}
-          <div className="lg:col-span-5 space-y-6">
-            <div>
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-950/70 border border-pink-500/50 text-pink-300 text-xs font-mono-cyber">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>DIREKTER KONTAKT // 24/7 ERREICHBAR</span>
-                </div>
-                {/* Partner Badge */}
-                <PartnerBadge />
+          {/* Header Badges */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-950/70 border border-pink-500/50 text-pink-300 text-xs font-mono-cyber">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>DIREKTER KONTAKT // 24/7 ERREICHBAR</span>
+            </div>
+            <PartnerBadge />
+          </div>
+
+          {/* Section Heading */}
+          <h2 className="text-3xl sm:text-4xl font-black font-display tracking-wider neon-pink-text">
+            KONTAKT
+          </h2>
+
+          {/* User Requested Prominent Direct Notice */}
+          <div className="p-4 sm:p-5 rounded-xl bg-pink-950/30 border border-pink-500/50 font-mono-cyber text-left sm:text-center space-y-2">
+            <p className="text-sm sm:text-base text-white font-semibold leading-relaxed">
+              Bei Interesse bitte an die E-Mail{' '}
+              <a
+                href={gmailComposeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleEmailClick}
+                className="text-cyan-300 hover:text-cyan-100 underline decoration-cyan-400 font-bold transition-colors inline-flex items-center gap-1"
+                title="Direkt in Gmail verfassen und senden"
+              >
+                <span>{emailAddress}</span>
+                <ExternalLink className="w-3.5 h-3.5 inline" />
+              </a>{' '}
+              senden.
+            </p>
+            <p className="text-xs sm:text-sm text-pink-300 flex items-center justify-start sm:justify-center gap-2">
+              <HeartHandshake className="w-4 h-4 text-pink-400 flex-shrink-0" />
+              <span>Danke für Ihr Interesse, wir werden uns so schnell wie möglich bei Ihnen melden.</span>
+            </p>
+          </div>
+
+          {/* Exact Kontaktdaten Card matching user screenshot */}
+          <div className="text-left max-w-xl mx-auto p-5 sm:p-6 rounded-xl bg-black/85 border-2 border-pink-500 shadow-[0_0_25px_rgba(255,45,141,0.35)] space-y-3.5 font-mono-cyber">
+            
+            {/* Header: KONTAKTDATEN with KOPIEREN Button */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <span className="text-xs sm:text-sm text-pink-400 font-bold uppercase tracking-widest">
+                KONTAKTDATEN
+              </span>
+              <button
+                onClick={copyContactData}
+                className="flex items-center space-x-1 text-[11px] text-cyan-300 hover:text-cyan-100 bg-cyan-950/60 px-3 py-1 rounded border border-cyan-500/40 transition-colors cursor-pointer"
+                title="Alle Kontaktdaten in die Zwischenablage kopieren"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-3 h-3 text-emerald-400" />
+                    <span className="text-emerald-400 font-bold">KOPIERT</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    <span>KOPIEREN</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Inhaber / Name */}
+            <div className="space-y-2 text-sm pt-1">
+              <div className="text-xl sm:text-2xl font-bold font-display text-white tracking-wide flex items-center gap-2.5">
+                <User className="w-5 h-5 text-pink-500 flex-shrink-0" />
+                <span>{contactInfo.name}</span>
               </div>
 
-              {/* Exact Header: KONTAKT */}
-              <h2 className="text-3xl sm:text-4xl font-black font-display tracking-wider neon-pink-text mb-3">
-                {contactInfo.title}
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
-                Haben Sie Fragen oder möchten Sie ein Angebot anfordern? Jede Anfrage wird direkt an{' '}
-                <strong className="text-pink-400 font-mono-cyber underline">{contactInfo.email}</strong> gesendet 
-                und persönlich von Dominik Rehberger beantwortet.
+              {/* Company */}
+              <div className="text-sm sm:text-base font-bold text-pink-400 flex items-center gap-2.5">
+                <Building className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                <span>{contactInfo.company}</span>
+              </div>
+
+              {/* Exact E-Mail with Gmail auto-redirect */}
+              <div className="pt-1">
+                <a
+                  href={gmailComposeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleEmailClick}
+                  className="text-cyan-300 hover:text-cyan-100 flex items-center gap-2.5 group transition-colors text-sm sm:text-base break-all font-semibold"
+                  title="Klicken, um die E-Mail direkt in Gmail zu öffnen"
+                >
+                  <Mail className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform flex-shrink-0" />
+                  <span className="underline group-hover:text-cyan-200">{emailAddress}</span>
+                </a>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <a
+                  href={`tel:${contactInfo.phone.replace(/\s+/g, '')}`}
+                  className="text-white hover:text-pink-300 flex items-center gap-2.5 group transition-colors text-base sm:text-lg font-bold"
+                >
+                  <Phone className="w-5 h-5 text-pink-500 group-hover:scale-110 transition-transform flex-shrink-0" />
+                  <span className="neon-pink-text">Tel. {contactInfo.phone}</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Area */}
+            <div className="pt-3 border-t border-slate-800 flex items-center gap-2 text-xs text-slate-300">
+              <MapPin className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+              <span>{contactInfo.area}</span>
+            </div>
+          </div>
+
+          {/* Feedback message banner upon clicking email */}
+          {hasClickedEmail && (
+            <div className="max-w-xl mx-auto p-4 rounded-xl bg-emerald-950/80 border-2 border-emerald-500 text-emerald-200 text-center font-mono-cyber shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-fade-in space-y-1">
+              <div className="flex items-center justify-center gap-2 font-bold text-sm text-white">
+                <Check className="w-4 h-4 text-emerald-400" />
+                <span>Gmail wurde geöffnet!</span>
+              </div>
+              <p className="text-xs text-emerald-300">
+                Danke für Ihr Interesse, wir werden uns so schnell wie möglich bei Ihnen melden.
               </p>
             </div>
+          )}
 
-            {/* Exactly formatted required contact card */}
-            <div className="p-5 rounded-xl bg-black/80 border-2 border-pink-500 shadow-[0_0_20px_rgba(255,45,141,0.35)] space-y-3.5 font-mono-cyber">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <span className="text-xs text-pink-400 font-bold uppercase tracking-widest">
-                  KONTAKTDATEN
-                </span>
-                <button
-                  onClick={copyContactData}
-                  className="flex items-center space-x-1 text-[11px] text-cyan-300 hover:text-cyan-100 bg-cyan-950/60 px-2.5 py-1 rounded border border-cyan-500/40 transition-colors cursor-pointer"
-                  title="Alle Kontaktdaten in die Zwischenablage kopieren"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-3 h-3 text-emerald-400" />
-                      <span className="text-emerald-400 font-bold">KOPIERT</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3 h-3" />
-                      <span>KOPIEREN</span>
-                    </>
-                  )}
-                </button>
-              </div>
+          {/* Action Buttons: Direct Gmail Compose and Phone Dial */}
+          <div className="max-w-xl mx-auto flex flex-col sm:flex-row gap-3 pt-1">
+            <a
+              href={gmailComposeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={handleEmailClick}
+              className="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-display text-xs font-bold tracking-wider text-center shadow-[0_0_20px_#00f0ff] transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Mail className="w-4 h-4" />
+              <span>IN GMAIL ÖFFNEN & SENDEN</span>
+              <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+            </a>
 
-              <div className="space-y-2 text-sm">
-                <div className="text-xl font-bold font-display text-white tracking-wide flex items-center gap-2">
-                  <User className="w-4 h-4 text-pink-500" />
-                  <span>{contactInfo.name}</span>
-                </div>
-
-                <div className="text-sm font-bold text-pink-400 flex items-center gap-2">
-                  <Building className="w-4 h-4 text-cyan-400" />
-                  <span>{contactInfo.company}</span>
-                </div>
-
-                <div className="pt-1">
-                  <a
-                    href={`mailto:${contactInfo.email}`}
-                    className="text-cyan-300 hover:text-cyan-100 flex items-center gap-2 group transition-colors text-sm break-all font-semibold"
-                  >
-                    <Mail className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform flex-shrink-0" />
-                    <span className="underline group-hover:text-cyan-200">{contactInfo.email}</span>
-                  </a>
-                </div>
-
-                <div>
-                  <a
-                    href={`tel:${contactInfo.phone.replace(/\s+/g, '')}`}
-                    className="text-white hover:text-pink-300 flex items-center gap-2 group transition-colors text-base font-bold"
-                  >
-                    <Phone className="w-4 h-4 text-pink-500 group-hover:scale-110 transition-transform flex-shrink-0" />
-                    <span className="neon-pink-text">Tel. {contactInfo.phone}</span>
-                  </a>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-800 flex items-center gap-2 text-[11px] text-slate-400">
-                <MapPin className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
-                <span>{contactInfo.area}</span>
-              </div>
-            </div>
-
-            {/* Quick Action Dial Buttons */}
-            <div className="flex gap-3">
-              <a
-                href={`tel:${contactInfo.phone.replace(/\s+/g, '')}`}
-                className="flex-1 py-3 px-4 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-display text-xs font-bold tracking-wider text-center shadow-[0_0_15px_#ff2d8d] transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Phone className="w-4 h-4" />
-                <span>JETZT ANRUFEN</span>
-              </a>
-
-              <a
-                href={`mailto:${contactInfo.email}?subject=Reblix%20Clean%20Solutions%20Anfrage`}
-                className="flex-1 py-3 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-display text-xs font-bold tracking-wider text-center shadow-[0_0_15px_#00f0ff] transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Mail className="w-4 h-4" />
-                <span>E-MAIL SENDEN</span>
-              </a>
-            </div>
+            <a
+              href={`tel:${contactInfo.phone.replace(/\s+/g, '')}`}
+              className="flex-1 py-3 px-5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-display text-xs font-bold tracking-wider text-center shadow-[0_0_18px_#ff2d8d] transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Phone className="w-4 h-4" />
+              <span>0676 740 8220 ANRUFEN</span>
+            </a>
           </div>
 
-          {/* Right Column: Direct Cyber Inquiry Form */}
-          <div className="lg:col-span-7 rounded-xl bg-black/60 border border-slate-800 p-6">
-            <h3 className="text-lg font-bold font-display text-white mb-1 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-              <span>UNVERBINDLICHE ANFRAGE SENDEN</span>
-            </h3>
-            <p className="text-xs text-slate-400 mb-5 font-mono-cyber">
-              Wird direkt an <span className="text-cyan-300 underline font-semibold">{contactInfo.email}</span> übermittelt.
-            </p>
-
-            {formSubmitted ? (
-              <div className="p-6 sm:p-8 rounded-xl bg-[#0e1620] border-2 border-emerald-500/70 text-center space-y-4 animate-fade-in font-mono-cyber shadow-[0_0_25px_rgba(16,185,129,0.3)]">
-                <div className="w-14 h-14 mx-auto rounded-full bg-emerald-950/80 border-2 border-emerald-400 flex items-center justify-center text-emerald-300 shadow-[0_0_20px_#10b981]">
-                  <Check className="w-7 h-7" />
+          {/* User Requested: SOFORT NACHRICHT SENDEN (unterhalb der E-Mail-Adresse / Kontaktdaten) */}
+          <div className="max-w-xl mx-auto pt-6 text-left">
+            <div className="rounded-2xl bg-black/90 border-2 border-cyan-400 shadow-[0_0_25px_rgba(0,240,255,0.3)] p-5 sm:p-7 space-y-4">
+              
+              {/* Box Title */}
+              <div className="flex items-center justify-between border-b border-cyan-500/30 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-400 flex items-center justify-center shadow-[0_0_10px_#00f0ff]">
+                    <Send className="w-4 h-4 text-cyan-300" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold font-display text-white tracking-wide flex items-center gap-2">
+                      <span>SOFORT NACHRICHT SENDEN</span>
+                    </h3>
+                    <p className="text-[11px] text-cyan-300/80 font-mono-cyber">
+                      Hinterlassen Sie hier Firmenname, E-Mail & Telefonnummer für Dominik
+                    </p>
+                  </div>
                 </div>
-                <h4 className="text-lg sm:text-xl font-bold font-display text-white tracking-wide">
-                  Danke für Ihr Interesse!
-                </h4>
-                <p className="text-sm text-slate-200 max-w-md mx-auto leading-relaxed font-sans">
-                  Wir werden die Anfrage so schnell wie möglich bearbeiten und uns bei Ihnen melden.
-                </p>
-                <div className="pt-2">
-                  <span className="inline-block px-3 py-1 rounded bg-black/60 border border-slate-700 text-xs text-slate-400">
-                    Übermittelt an: <span className="text-cyan-300 font-semibold">{contactInfo.email}</span>
-                  </span>
-                </div>
-
-                <div className="pt-3">
-                  <button
-                    onClick={() => {
-                      setFormData({
-                        name: '',
-                        email: '',
-                        phone: '',
-                        objectType: services[0]?.title ?? 'Stiegenaufgang- & Treppenreinigung',
-                        message: '',
-                      });
-                      setFormSubmitted(false);
-                    }}
-                    className="px-5 py-2.5 rounded-lg bg-pink-600 hover:bg-pink-500 text-white text-xs font-display font-bold tracking-wider shadow-[0_0_12px_#ff2d8d] transition-all cursor-pointer"
-                  >
-                    WEITERE ANFRAGE SENDEN
-                  </button>
+                <div className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-pink-950 border border-pink-500/40 text-pink-300 text-[10px] font-mono-cyber">
+                  <MessageSquare className="w-3 h-3 text-pink-400" />
+                  <span>DIREKTBOX</span>
                 </div>
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-mono-cyber text-slate-300 mb-1">
-                      IHR NAME / UNTERNEHMEN *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="z.B. Dominik / Hausverwaltung"
-                      className="w-full px-3.5 py-2.5 rounded-lg bg-[#0d1019] border border-slate-700 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-white text-xs font-mono-cyber outline-none transition-all placeholder:text-slate-600"
-                    />
-                  </div>
 
-                  <div>
-                    <label className="block text-[11px] font-mono-cyber text-slate-300 mb-1">
-                      TELEFONNUMMER *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="z.B. 0676 123 4567"
-                      className="w-full px-3.5 py-2.5 rounded-lg bg-[#0d1019] border border-slate-700 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-white text-xs font-mono-cyber outline-none transition-all placeholder:text-slate-600"
-                    />
+              {/* Success Notification after sending */}
+              {submitSuccess ? (
+                <div className="p-5 rounded-xl bg-gradient-to-r from-emerald-950/90 to-black border-2 border-emerald-400 text-center font-mono-cyber space-y-3 shadow-[0_0_25px_rgba(16,185,129,0.35)] animate-fade-in">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-emerald-900/60 border border-emerald-400 flex items-center justify-center shadow-[0_0_15px_#10b981]">
+                    <CheckCircle className="w-6 h-6 text-emerald-400" />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-mono-cyber text-slate-300 mb-1">
-                      IHRE E-MAIL-ADRESSE *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="ihre-adresse@beispiel.at"
-                      className="w-full px-3.5 py-2.5 rounded-lg bg-[#0d1019] border border-slate-700 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-white text-xs font-mono-cyber outline-none transition-all placeholder:text-slate-600"
-                    />
+                  <div className="space-y-1">
+                    <h4 className="text-base font-bold font-display text-white">
+                      NACHRICHT ERFOLGREICH ÜBERMITTELT!
+                    </h4>
+                    <p className="text-sm sm:text-base font-bold text-emerald-300 leading-snug">
+                      Danke für deine Nachricht, wir werden uns so schnell wie möglich bei Ihnen melden.
+                    </p>
+                    <p className="text-xs text-slate-300 pt-1">
+                      Ihre Nachricht wurde direkt im Admin-Bereich von Dominik Rehberger hinterlegt.
+                    </p>
                   </div>
-
-                  <div>
-                    <label className="block text-[11px] font-mono-cyber text-slate-300 mb-1">
-                      GEWÜNSCHTE LEISTUNG
-                    </label>
-                    <select
-                      value={formData.objectType}
-                      onChange={(e) => setFormData({ ...formData, objectType: e.target.value })}
-                      className="w-full px-3.5 py-2.5 rounded-lg bg-[#0d1019] border border-slate-700 focus:border-cyan-400 text-white text-xs font-mono-cyber outline-none transition-all cursor-pointer"
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setSubmitSuccess(false)}
+                      className="px-4 py-2 rounded-lg bg-emerald-900/80 hover:bg-emerald-800 border border-emerald-400 text-emerald-200 text-xs font-bold transition-colors cursor-pointer"
                     >
-                      {services.map((srv) => (
-                        <option key={srv.id} value={srv.title}>
-                          {srv.title}
-                        </option>
-                      ))}
-                      <option value="Individuelle Reinigungsleistung">Weitere / Individuelle Reinigungsarbeiten</option>
-                    </select>
+                      Weitere Nachricht verfassen
+                    </button>
                   </div>
                 </div>
+              ) : (
+                /* Form Fields */
+                <form onSubmit={handleSendMessage} className="space-y-3.5 font-mono-cyber">
+                  {formError && (
+                    <div className="p-3 rounded-lg bg-red-950/80 border border-red-500 text-red-200 text-xs">
+                      {formError}
+                    </div>
+                  )}
 
-                <div>
-                  <label className="block text-[11px] font-mono-cyber text-slate-300 mb-1">
-                    NACHRICHT / OBJEKTBESCHREIBUNG (OPTIONAL)
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    placeholder="Beschreiben Sie kurz das Objekt, Anzahl der Stiegen/Etagen, Fenster oder besondere Anforderungen..."
-                    className="w-full px-3.5 py-2.5 rounded-lg bg-[#0d1019] border border-slate-700 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 text-white text-xs font-mono-cyber outline-none transition-all placeholder:text-slate-600 resize-none"
-                  />
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Firmenname */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-slate-300 font-semibold flex items-center gap-1.5">
+                        <Building className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Firmenname</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="z. B. Hausverwaltung Mustermann GmbH..."
+                        value={company}
+                        onChange={(e) => setCompany(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-[#080b12] border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all placeholder:text-slate-600 shadow-inner"
+                      />
+                    </div>
 
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-                  <span className="text-[11px] text-slate-400 font-mono-cyber">
-                    Empfänger: <strong className="text-pink-400">{contactInfo.email}</strong>
-                  </span>
+                    {/* Name / Ansprechpartner */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-slate-300 font-semibold flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-pink-400" />
+                        <span>Ihr Name / Ansprechpartner</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Vor- und Nachname..."
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-[#080b12] border border-slate-700 focus:border-pink-400 text-white text-xs outline-none transition-all placeholder:text-slate-600 shadow-inner"
+                      />
+                    </div>
+                  </div>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* E-Mail Adresse */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-slate-300 font-semibold flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Ihre E-Mail-Adresse *</span>
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="ihre.adresse@beispiel.at"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-[#080b12] border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all placeholder:text-slate-600 shadow-inner"
+                      />
+                    </div>
+
+                    {/* Telefonnummer */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-slate-300 font-semibold flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-pink-400" />
+                        <span>Ihre Telefonnummer *</span>
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="z. B. 0676 123 4567"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-[#080b12] border border-slate-700 focus:border-pink-400 text-white text-xs outline-none transition-all placeholder:text-slate-600 shadow-inner"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Nachricht */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] text-slate-300 font-semibold flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Ihre Nachricht / Anliegen *</span>
+                    </label>
+                    <textarea
+                      required
+                      rows={3}
+                      placeholder="Beschreiben Sie kurz Ihr Reinigungsvorhaben oder gewünschte Leistungen (z. B. Stiegenhausreinigung, Büroreinigung, Terminwunsch)..."
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-[#080b12] border border-slate-700 focus:border-cyan-400 text-white text-xs outline-none transition-all placeholder:text-slate-600 resize-none shadow-inner leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
                   <button
                     type="submit"
-                    className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-pink-600 hover:bg-pink-500 text-white font-display text-xs font-bold tracking-wider shadow-[0_0_15px_#ff2d8d] transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    disabled={isSubmitting}
+                    className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-pink-600 via-rose-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white font-display text-xs sm:text-sm font-bold tracking-widest shadow-[0_0_22px_#ff2d8d] hover:shadow-[0_0_30px_#00f0ff] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                   >
-                    <span>ANFRAGE AN {contactInfo.email.split('@')[0]} SENDEN</span>
-                    <Send className="w-3.5 h-3.5" />
+                    <Send className="w-4 h-4" />
+                    <span>SOFORT NACHRICHT SENDEN</span>
                   </button>
-                </div>
-              </form>
-            )}
+
+                  <p className="text-[10px] text-slate-500 text-center pt-0.5">
+                    Ihre Daten werden vertraulich behandelt und direkt an Dominik übermittelt.
+                  </p>
+                </form>
+              )}
+            </div>
           </div>
+
         </div>
       </div>
     </div>

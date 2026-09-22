@@ -98,7 +98,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin, isAdmin }) => {
                   <p>
                     Dominik Rehberger<br />
                     Reblix Clean Solutions<br />
-                    E-Mail: reblixmediensolutions@gmail.com<br />
+                    E-Mail: reblixcceansoutions@gmail.com<br />
                     Telefon: 0676 740 8220<br />
                     Unternehmensgegenstand: Denkmal-, Fassaden- und Gebäudereinigung, Unterhaltsreinigung, Stiegenhausreinigung.
                   </p>
@@ -115,12 +115,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin, isAdmin }) => {
                   <p><strong>Datenschutz & Datenverarbeitung:</strong></p>
                   <p>
                     Der Schutz Ihrer persönlichen Daten ist uns ein besonderes Anliegen. Wir verarbeiten Ihre 
-                    Daten (wie Name, Telefon, E-Mail aus dem Anfrageformular) ausschließlich auf Grundlage der 
-                    gesetzlichen Bestimmungen (DSGVO, TKG 2003).
+                    Daten ausschließlich auf Grundlage der gesetzlichen Bestimmungen (DSGVO, TKG 2003).
                   </p>
                   <p>
-                    Wenn Sie per Formular auf der Website oder per E-Mail Kontakt mit uns aufnehmen, werden Ihre 
-                    angegebenen Daten zwecks Bearbeitung der Anfrage direkt an reblixmediensolutions@gmail.com gesendet 
+                    Wenn Sie per E-Mail Kontakt mit uns aufnehmen, werden Ihre 
+                    angegebenen Daten zwecks Bearbeitung der Anfrage direkt an reblixcceansoutions@gmail.com gesendet 
                     und für eventuelle Rückfragen gespeichert.
                   </p>
                 </>

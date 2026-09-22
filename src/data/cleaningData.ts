@@ -1,4 +1,4 @@
-import { SiteContent } from '../types';
+import { SiteContent, InquiryRecord } from '../types';
 
 import arBgImg from '../assets/images/ar_reblix_bg_1789845816451.jpg';
 import putzfetzenImg from '../assets/images/putzfetzen_stiege_1789845839856.jpg';
@@ -17,7 +17,7 @@ export const ASSET_IMAGES = {
 };
 
 export const INITIAL_SITE_CONTENT: SiteContent = {
-  heroTitle: 'REBLIX Clean Solutions - Die Zukunft der Sauberkeit in 4K Neon',
+  heroTitle: 'Reblix-Services',
   heroSubtitle: 'High-End Gebäudereinigung • Stiegenhaus-Diamantpolitur • Hygiene-Sanierung',
   aboutTitle: 'Über mich',
   aboutText: `Mein Name ist Dominik und ich stehe hinter REBLIX Clean Solutions. Mein Ziel ist es, Kunden eine zuverlässige, gründliche und professionelle Reinigung zu bieten, auf die sie sich langfristig verlassen können.
@@ -37,7 +37,7 @@ Ich freue mich über jede Anfrage und darauf, Kunden bei der Reinigung ihrer Rä
     title: 'KONTAKT',
     name: 'Dominik Rehberger',
     company: 'Reblix Clean Solutions',
-    email: 'reblixmediensolutions@gmail.com',
+    email: 'reblixcceansoutions@gmail.com',
     phone: '0676 740 8220',
     area: 'Wien, Niederösterreich & ganz Österreich',
   },
@@ -152,15 +152,23 @@ Ich freue mich über jede Anfrage und darauf, Kunden bei der Reinigung ihrer Rä
   ],
 };
 
-const STORAGE_KEY = 'reblix_site_content_v5';
+const STORAGE_KEY = 'reblix_site_content_v7';
 
 export function loadSiteContent(): SiteContent {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('reblix_site_content_v6') || localStorage.getItem('reblix_site_content_v5');
     if (saved) {
       const parsed = JSON.parse(saved);
       // Validate structure basic check
-      if (parsed && parsed.heroTitle && Array.isArray(parsed.services) && Array.isArray(parsed.images)) {
+      if (parsed && Array.isArray(parsed.services) && Array.isArray(parsed.images)) {
+        if (!parsed.heroTitle || parsed.heroTitle.includes('Zukunft der Sauberkeit')) {
+          parsed.heroTitle = 'Reblix-Services';
+        }
+        if (parsed.contactInfo) {
+          if (!parsed.contactInfo.email || parsed.contactInfo.email.includes('reblixmedien')) {
+            parsed.contactInfo.email = 'reblixcceansoutions@gmail.com';
+          }
+        }
         return parsed;
       }
     }
@@ -185,4 +193,54 @@ export function resetSiteContent(): SiteContent {
     console.error('Failed to clear storage:', e);
   }
   return INITIAL_SITE_CONTENT;
+}
+
+const INQUIRIES_STORAGE_KEY = 'reblix_inquiries';
+
+export function loadInquiriesFromStorage(): InquiryRecord[] {
+  try {
+    const stored = localStorage.getItem(INQUIRIES_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Failed to load inquiries:', e);
+  }
+  return [];
+}
+
+export function saveInquiryToStorage(inquiryData: {
+  name: string;
+  company: string;
+  email: string;
+  phone: string;
+  message: string;
+  targetEmail?: string;
+}): InquiryRecord {
+  const current = loadInquiriesFromStorage();
+  const newRecord: InquiryRecord = {
+    id: 'inq_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+    date: new Date().toLocaleString('de-AT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    targetEmail: inquiryData.targetEmail || 'reblixcceansoutions@gmail.com',
+    name: inquiryData.name || 'Interessent',
+    company: inquiryData.company,
+    email: inquiryData.email,
+    phone: inquiryData.phone,
+    objectType: inquiryData.company ? `Firma: ${inquiryData.company}` : 'Direktanfrage',
+    message: inquiryData.message,
+    read: false,
+  };
+  const updated = [newRecord, ...current];
+  try {
+    localStorage.setItem(INQUIRIES_STORAGE_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.error('Failed to persist inquiry:', e);
+  }
+  return newRecord;
 }

@@ -46,8 +46,8 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           <span className="tracking-widest font-bold">NEXT-GEN GEBÄUDEREINIGUNG & HYGIENE-TECHNIK</span>
         </div>
 
-        {/* Central Large Text Field - Exact Prompt Header with subtle gentle glow */}
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black font-display tracking-tight text-white drop-shadow-[0_0_8px_rgba(255,45,141,0.38)] mb-4 leading-tight">
+        {/* Central Large Cyberpunk Neon Header */}
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-display tracking-wider neon-cyberpunk-title uppercase mb-4 leading-tight">
           {title}
         </h1>
 

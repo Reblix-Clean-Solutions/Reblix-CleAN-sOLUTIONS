@@ -134,11 +134,13 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
               <div>
                 <span className="text-slate-400 text-[10px] block">E-MAIL FÜR ANFRAGEN:</span>
                 <a
-                  href="mailto:reblixmediensolutions@gmail.com"
+                  href="https://mail.google.com/mail/?view=cm&fs=1&to=reblixcceansoutions@gmail.com&su=Reblix%20Clean%20Solutions%20Anfrage"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-cyan-300 hover:text-cyan-200 underline font-semibold flex items-center gap-1.5 mt-0.5 break-all"
                 >
                   <Mail className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
-                  <span>reblixmediensolutions@gmail.com</span>
+                  <span>reblixcceansoutions@gmail.com</span>
                 </a>
               </div>
               <div>

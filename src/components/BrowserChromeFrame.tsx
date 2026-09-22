@@ -15,8 +15,8 @@ export const BrowserChromeFrame: React.FC<BrowserChromeFrameProps> = ({ children
     setTimeout(() => {
       setCleaningWipeActive(false);
       setWipeCompletedToast(true);
-      setTimeout(() => setWipeCompletedToast(false), 3000);
-    }, 1800);
+      setTimeout(() => setWipeCompletedToast(false), 3500);
+    }, 2400);
   };
 
   return (
@@ -69,12 +69,19 @@ export const BrowserChromeFrame: React.FC<BrowserChromeFrameProps> = ({ children
           </div>
         </div>
 
-        {/* Dynamic Cleaning Wipe Animation when triggered */}
+        {/* Dynamic Cleaning Wipe Animation when triggered - Sweeps from absolute top to bottom */}
         {cleaningWipeActive && (
           <div className="absolute inset-0 z-50 pointer-events-none overflow-hidden">
-            {/* Laser Blade / Squeegee Sweep */}
-            <div className="w-full h-8 bg-gradient-to-r from-cyan-400 via-pink-500 to-cyan-400 opacity-90 blur-sm shadow-[0_0_30px_#00f0ff] animate-laser" />
-            <div className="absolute inset-0 bg-cyan-500/10 backdrop-blur-[0.5px]" />
+            {/* Full-width Glanz Sweep Beam gliding from top (0%) to bottom (100%) */}
+            <div className="animate-glanz-full">
+              {/* Diffuse Light Aura */}
+              <div className="w-full h-16 bg-gradient-to-r from-transparent via-cyan-400/80 via-pink-500/80 to-transparent blur-md shadow-[0_0_50px_#00f0ff,0_0_80px_#ff2d8d]" />
+              {/* Razor-sharp Center Laser Blade */}
+              <div className="w-full h-2 bg-gradient-to-r from-transparent via-cyan-200 via-white via-pink-200 to-transparent shadow-[0_0_25px_#ffffff,0_0_45px_#00f0ff]" />
+              {/* Trailing crystal wet shine sheen */}
+              <div className="w-full h-32 bg-gradient-to-b from-cyan-400/20 via-pink-500/10 to-transparent blur-sm" />
+            </div>
+            <div className="absolute inset-0 bg-cyan-500/5 backdrop-blur-[0.5px] transition-opacity duration-500" />
           </div>
         )}
 
